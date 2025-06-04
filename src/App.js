@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "./contract"
 import './App.css';
 
 function App() {
   const [walletAddress, setWalletAddress] = useState(null);
+  const [contract, setContract] = useState(null);
+
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -11,6 +15,14 @@ function App() {
           method: 'eth_requestAccounts',
         });
         setWalletAddress(accounts[0]);
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = provider.getSigner();
+        const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        setContract(contractInstance);
+
+        console.log('Contract connected:', contractInstance);
+
       } catch (err) {
         console.error('User rejected connection or other error:', err);
       }
