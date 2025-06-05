@@ -10,6 +10,10 @@ function App() {
   const [nftName, setNftName] = useState('');
   const [nftMetadata, setNftMetadata] = useState('');
   const [imageFile, setImageFile] = useState(null);
+  const [tokenId, setTokenId] = useState('');
+  const [price, setPrice] = useState('');
+  const [listings, setListings] = useState([]);
+
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -36,7 +40,7 @@ function App() {
     setContract(null);
   };
 
-  const uploadToIPFS = async file => {
+  const uploadToIPFS = async (file) => {
     if (file) {
       try {
         const formData = new FormData();
@@ -53,8 +57,8 @@ function App() {
           },
         });
         console.log("Image uploaded to Pinata:", response.data.IpfsHash);
-        const CID = response.data.IpfsHash;// harsh / !url 
-        const ImgHash = `https://gateway.pinata.cloud/ipfs/${CID}`;// url => image ka url 
+        const CID = response.data.IpfsHash;
+        const ImgHash = `https://gateway.pinata.cloud/ipfs/${CID}`;
         console.log(ImgHash);
         return CID;
       } catch (error) {
@@ -82,7 +86,7 @@ function App() {
         }
       );
       const resData = await res.json();
-      console.log('Metadata uploaded,CID:', resData.IpfsHash);
+      console.log('Metadata uploaded, CID:', resData.IpfsHash);
       return resData.IpfsHash;
     } catch (error) {
       console.log(error);
@@ -100,11 +104,55 @@ function App() {
 
     const metadataCID = await pinJSONToIPFS(nftName, nftMetadata, imageUrl);
     console.log('Metadata URL:', metadataCID);
-    const metadataurl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`
-    console.log("metadataurl", metadataurl)
+    const metadataurl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
+    console.log("metadataurl", metadataurl);
 
+    try {
+      const tx = await contract.safeMint(metadataurl);
+      const receipt = await tx.wait();
+
+      const event = receipt.logs
+        .map((log) => {
+          try {
+            return contract.interface.parseLog(log);
+          } catch {
+            return null;
+          }
+        })
+        .find((parsed) => parsed && parsed.name === 'NFTMinted');
+
+      if (event) {
+        const tokenId = event.args.tokenId.toString();
+        console.log('✅ NFT minted with Token ID:', tokenId);
+        alert(`NFT Minted! Token ID: ${tokenId}`);
+      } else {
+        console.log('❌ NFTMinted event not found in receipt');
+      }
+
+    } catch (error) {
+      console.error('❌ Error minting NFT:', error);
+      alert('Failed to mint NFT. Check console for details.');
+    }
   };
 
+  const handleListNFT = async () => {
+    if (!contract) return alert('Contract not connected.');
+    if (!tokenId || !price) return alert('Enter both Token ID and Price.');
+
+    try {
+      const priceInWei = ethers.parseEther(price.toString());
+      const tx = await contract.listing(tokenId, priceInWei);
+      await tx.wait();
+
+      alert(`✅ NFT listed successfully at ${price} ETH!`);
+    } catch (error) {
+      console.error('❌ Error listing NFT:', error);
+      alert('Failed to list NFT. Check console for details.');
+    }
+  };
+
+
+  // ✅ JSX must go here, outside of functions
   return (
     <div className="App">
       <h1>ERC721 NFT Minter</h1>
@@ -136,6 +184,20 @@ function App() {
 
             <button type="submit">Mint NFT</button>
           </form>
+          <div className="listing-form">
+            <h2>List NFT</h2>
+            <div>
+              <label>Token ID:</label>
+              <input type="number" value={tokenId} onChange={(e) => setTokenId(e.target.value)} />
+            </div>
+
+            <div>
+              <label>Price (in ETH):</label>
+              <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+            </div>
+
+            <button onClick={handleListNFT}>List NFT</button>
+          </div>
         </>
       ) : (
         <button onClick={connectWallet}>Connect Wallet</button>
