@@ -69,3 +69,18 @@ p {
   color: #222;
   font-weight: 500;
 }
+
+.nft-listings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.nft-card {
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 16px;
+  width: 240px;
+  background-color: #f9f9f9;
+  text-align: center;
+}

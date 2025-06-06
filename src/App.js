@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import axios from 'axios';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from './contract';
@@ -13,6 +13,8 @@ function App() {
   const [tokenId, setTokenId] = useState('');
   const [price, setPrice] = useState('');
   const [listings, setListings] = useState([]);
+  const [loadingListings, setLoadingListings] = useState(false);
+
 
 
   const connectWallet = async () => {
@@ -152,6 +154,47 @@ function App() {
   };
 
 
+  const fetchListings = async () => {
+    if (!contract) return;
+
+    try {
+      setLoadingListings(true);
+      const [listingData, tokenIds] = await contract.getAllListings();
+
+      const listingsArray = await Promise.all(
+        tokenIds.map(async (tokenId, index) => {
+          const tokenUri = await contract.tokenURI(tokenId);
+          let metadata = {};
+          try {
+            const res = await fetch(tokenUri);
+            metadata = await res.json();
+          } catch (err) {
+            console.warn("❌ Couldn't fetch metadata for", tokenUri);
+          }
+
+          return {
+            tokenId: tokenId.toString(),
+            seller: listingData[index].seller,
+            price: ethers.formatEther(listingData[index].price),
+            metadata,
+          };
+        })
+      );
+
+      setListings(listingsArray);
+    } catch (error) {
+      console.error('❌ Error fetching listings:', error);
+    } finally {
+      setLoadingListings(false);
+    }
+  };
+
+  useEffect(() => {
+    if (contract) {
+      fetchListings();
+    }
+  }, [contract]);
+
   // ✅ JSX must go here, outside of functions
   return (
     <div className="App">
@@ -202,6 +245,31 @@ function App() {
       ) : (
         <button onClick={connectWallet}>Connect Wallet</button>
       )}
+      <div className="marketplace-listings">
+        <h2>Marketplace Listings</h2>
+        {loadingListings ? (
+          <p>Loading listings...</p>
+        ) : listings.length === 0 ? (
+          <p>No NFTs listed yet.</p>
+        ) : (
+          <div className="nft-listings">
+            {listings.map((item) => (
+              <div key={item.tokenId} className="nft-card">
+                <img src={item.metadata.image} alt={item.metadata.name} width={200} />
+                <h3>{item.metadata.name}</h3>
+                <p>{item.metadata.description}</p>
+                <p><strong>Token ID:</strong> {item.tokenId}</p>
+                <p><strong>Price:</strong> {item.price} ETH</p>
+                <p>
+                  <strong>Seller:</strong>{' '}
+                  {item.seller.slice(0, 6)}...{item.seller.slice(-4)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
