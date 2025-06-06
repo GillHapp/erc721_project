@@ -52,9 +52,9 @@ function App() {
           url: 'https://api.pinata.cloud/pinning/pinFileToIPFS',
           data: formData,
           headers: {
-            pinata_api_key: '7abd11d3d3a427672b7c',
+            pinata_api_key: '<apni lga lo bhai>',
             pinata_secret_api_key:
-              '2bcfc54fa64a2d441807c030837a8d84876e7e019bd732389e3b5f35c99fe7be',
+              '<apni lga lo bhai>',
             'Content-Type': 'multipart/form-data',
           },
         });
@@ -82,7 +82,7 @@ function App() {
           method: 'POST',
           headers: {
             'Content-type': 'application/json',
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI2NTNlOWJkNy05MTc1LTRlOGQtYTNkNi0zYjRlM2JlNGUxZjYiLCJlbWFpbCI6ImhhcHB5Ymlvc3RvY2tjb2RlMDcwNDBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjdhYmQxMWQzZDNhNDI3NjcyYjdjIiwic2NvcGVkS2V5U2VjcmV0IjoiMmJjZmM1NGZhNjRhMmQ0NDE4MDdjMDMwODM3YThkODQ4NzZlN2UwMTliZDczMjM4OWUzYjVmMzVjOTlmZTdiZSIsImV4cCI6MTc4MDY2MzY3MH0.UBtZf2buOGz6qKKUGK3gpoZbUdW-IsEB_Jx-gFeXQRA`,
+            Authorization: `Bearer <apni lga lo bhai>`,
           },
           body: data,
         }
@@ -195,6 +195,23 @@ function App() {
     }
   }, [contract]);
 
+  const handleBuyNFT = async (tokenId, price) => {
+    if (!contract) return alert('Contract not connected.');
+
+    try {
+      const tx = await contract.buyNFT(tokenId, { value: ethers.parseEther(price.toString()) });
+      await tx.wait();
+
+      alert(`✅ Successfully bought NFT #${tokenId}!`);
+      fetchListings(); // Refresh listings after purchase
+    } catch (error) {
+      console.error('❌ Error buying NFT:', error);
+      alert('Failed to buy NFT. Check console for details.');
+    }
+  };
+
+
+
   // ✅ JSX must go here, outside of functions
   return (
     <div className="App">
@@ -264,6 +281,12 @@ function App() {
                   <strong>Seller:</strong>{' '}
                   {item.seller.slice(0, 6)}...{item.seller.slice(-4)}
                 </p>
+                <button
+                  className="buy-button"
+                  onClick={() => handleBuyNFT(item.tokenId, item.price)}
+                >
+                  Buy
+                </button>
               </div>
             ))}
           </div>
